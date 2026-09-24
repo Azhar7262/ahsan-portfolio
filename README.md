@@ -56,8 +56,8 @@ SMTP_PASS=your-app-password
 2. Go to [render.com](https://render.com) → **New → Web Service** → connect the repo
 3. Settings:
    - **Build command:** `npm install`
-   - **Start command:** `npm start`
-   - **Environment variables:** `SITE_URL` = your live URL, plus SMTP vars if using email
+   - **Start command:** `node server.js`
+   - **Environment variable:** `SITE_URL` = `https://YOUR-APP-NAME.onrender.com` (shown after deploy)
 4. Deploy — you get free HTTPS automatically
 5. (Optional) Point a custom domain like `ahsanilyas.com` at it
 
