@@ -45,6 +45,21 @@
     });
   }
 
+  // ---------- Button click ripple animation ----------
+  document.querySelectorAll('.btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      var rect = btn.getBoundingClientRect();
+      var size = Math.max(rect.width, rect.height);
+      var ripple = document.createElement('span');
+      ripple.className = 'ripple' + (btn.classList.contains('btn-secondary') || btn.classList.contains('btn-ghost') ? ' ripple-dark' : '');
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      btn.appendChild(ripple);
+      setTimeout(function () { ripple.remove(); }, 650);
+    });
+  });
+
   // ---------- CV download tracking (analytics-ready hook) ----------
   document.querySelectorAll('[data-cv-track]').forEach(function (el) {
     el.addEventListener('click', function () {

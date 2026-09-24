@@ -32,7 +32,13 @@ function readJson(file, fallback) {
   }
 }
 function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  } catch (e) {
+    // Never let tracking/persistence failures crash a request
+    console.error('Write failed for', file, ':', e.message);
+  }
 }
 
 // CV download counter (persisted in data/stats.json)
@@ -69,13 +75,24 @@ app.get('/', (req, res) => {
 app.get('/cv', (req, res) => {
   const cvPath = path.join(DATA_DIR, 'cv', 'cv.pdf');
   if (!fs.existsSync(cvPath)) {
+    console.error('CV missing at', cvPath);
     return res
       .status(404)
-      .send('CV not found yet. Please place your CV at data/cv/cv.pdf');
+      .send('CV file missing — please email ' + content.contact.email + ' for my CV.');
   }
-  stats.cvDownloads += 1;
-  writeJson(STATS_FILE, stats);
-  res.download(cvPath, 'Ahsan_Ilyas_CV.pdf');
+  // Count the download, but never let tracking failures break it
+  try {
+    stats.cvDownloads += 1;
+    writeJson(STATS_FILE, stats);
+  } catch (e) {
+    console.error('CV stats update failed:', e.message);
+  }
+  res.download(cvPath, 'Ahsan_Ilyas_CV.pdf', (err) => {
+    if (err && !res.headersSent) {
+      console.error('CV download failed:', err.message);
+      res.status(500).send('Could not download the CV — please email ' + content.contact.email);
+    }
+  });
 });
 
 // Contact form
@@ -130,6 +147,13 @@ app.post('/contact', (req, res) => {
 app.use((req, res, next) => {
   res.locals.cvFile = '/cv';
   next();
+});
+
+// Global error handler — friendly page instead of an ugly stack trace
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.stack || err.message);
+  if (res.headersSent) return next(err);
+  res.status(500).send('Something went wrong — please try again or email ' + content.contact.email);
 });
 
 app.listen(PORT, () => {
